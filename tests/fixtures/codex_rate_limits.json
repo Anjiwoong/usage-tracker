@@ -1,6 +1,7 @@
 {
   "rateLimits": {
     "limitId": "codex",
+    "planType": "team",
     "primary": {
       "usedPercent": 52.0,
       "windowDurationMins": 300,

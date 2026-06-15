@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta, timezone
 
+from usage_tracker.codex_fetcher import format_plan_label
+from usage_tracker.cursor_fetcher import format_membership_label
 from usage_tracker.models import AppSnapshot, StatusLevel
 
 STATUS_EMOJI = {
@@ -159,8 +161,22 @@ def format_updated_at(snapshot: AppSnapshot, stale: bool) -> str:
     return text
 
 
+def cursor_section_title(snapshot: AppSnapshot) -> str:
+    membership_type = snapshot.cursor.membership_type if snapshot.cursor else None
+    if membership_type:
+        return f"▸ Cursor {format_membership_label(membership_type)}"
+    return "▸ Cursor"
+
+
+def codex_section_title(snapshot: AppSnapshot) -> str:
+    plan_type = snapshot.codex.plan_type if snapshot.codex else None
+    if plan_type:
+        return f"▸ Codex {format_plan_label(plan_type)}"
+    return "▸ Codex"
+
+
 def build_detail_lines(snapshot: AppSnapshot, stale: bool) -> list[str]:
-    lines: list[str] = ["▸ Cursor Pro+"]
+    lines: list[str] = [cursor_section_title(snapshot)]
 
     if snapshot.cursor and not snapshot.cursor.error:
         c = snapshot.cursor
@@ -172,7 +188,7 @@ def build_detail_lines(snapshot: AppSnapshot, stale: bool) -> list[str]:
     else:
         lines.append("   데이터 없음")
 
-    lines.extend(["", "▸ Codex Team"])
+    lines.extend(["", codex_section_title(snapshot)])
 
     if snapshot.codex and not snapshot.codex.error:
         x = snapshot.codex

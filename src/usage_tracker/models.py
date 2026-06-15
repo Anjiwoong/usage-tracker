@@ -25,6 +25,7 @@ class CursorUsage:
     api_percent: float
     billing_cycle_end: datetime
     fetched_at: datetime
+    membership_type: str | None = None
     error: str | None = None
 
 
@@ -35,6 +36,7 @@ class CodexUsage:
     seven_day_used_percent: float
     seven_day_reset_seconds: int
     fetched_at: datetime
+    plan_type: str | None = None
     error: str | None = None
 
 

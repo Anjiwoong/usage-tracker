@@ -4,7 +4,9 @@ from usage_tracker.models import AppSnapshot, CodexUsage, CursorUsage
 from usage_tracker.popover import (
     build_detail_lines,
     build_detail_text,
+    codex_section_title,
     codex_summary_label,
+    cursor_section_title,
     cursor_summary_label,
     format_codex_five_hour_reset_line,
     format_codex_weekly_reset_line,
@@ -59,8 +61,14 @@ def test_metric_line_is_with_zero_filled_blocks():
 
 def test_summary_labels():
     snapshot = AppSnapshot(
-        cursor=CursorUsage(38, 12, datetime(2026, 5, 2, tzinfo=timezone.utc), datetime.now(timezone.utc)),
-        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc)),
+        cursor=CursorUsage(
+            38,
+            12,
+            datetime(2026, 5, 2, tzinfo=timezone.utc),
+            datetime.now(timezone.utc),
+            membership_type="pro_plus",
+        ),
+        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc), plan_type="team"),
     )
     assert cursor_summary_label(snapshot) == format_metric_line("Auto+Composer", 38)
     assert codex_summary_label(snapshot) == format_metric_line("5시간", 52)
@@ -94,12 +102,19 @@ def test_codex_reset_lines_show_end_time_and_date():
 
 def test_build_detail_lines():
     snapshot = AppSnapshot(
-        cursor=CursorUsage(38, 12, datetime(2026, 5, 2, tzinfo=timezone.utc), datetime.now(timezone.utc)),
-        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc)),
+        cursor=CursorUsage(
+            38,
+            12,
+            datetime(2026, 5, 2, tzinfo=timezone.utc),
+            datetime.now(timezone.utc),
+            membership_type="pro_plus",
+        ),
+        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc), plan_type="team"),
     )
     lines = build_detail_lines(snapshot, stale=False)
 
     assert lines[0] == "▸ Cursor Pro+"
+    assert "▸ Codex Team" in lines
     assert any("Auto+Composer" in line for line in lines)
     assert any("5시간" in line for line in lines)
     assert any("갱신" in line for line in lines)
@@ -107,10 +122,34 @@ def test_build_detail_lines():
 
 def test_build_detail_text():
     snapshot = AppSnapshot(
-        cursor=CursorUsage(38, 12, datetime(2026, 5, 2, tzinfo=timezone.utc), datetime.now(timezone.utc)),
-        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc)),
+        cursor=CursorUsage(
+            38,
+            12,
+            datetime(2026, 5, 2, tzinfo=timezone.utc),
+            datetime.now(timezone.utc),
+            membership_type="pro",
+        ),
+        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc), plan_type="plus"),
     )
     text = build_detail_text(snapshot, stale=False)
 
-    assert "Cursor Pro+" in text
-    assert "Codex Team" in text
+    assert "Cursor Pro" in text
+    assert "Cursor Pro+" not in text
+    assert "Codex Plus" in text
+    assert "Codex Team" not in text
+
+
+def test_cursor_section_title_without_membership():
+    snapshot = AppSnapshot(
+        cursor=CursorUsage(38, 12, datetime(2026, 5, 2, tzinfo=timezone.utc), datetime.now(timezone.utc)),
+        codex=None,
+    )
+    assert cursor_section_title(snapshot) == "▸ Cursor"
+
+
+def test_codex_section_title_without_plan():
+    snapshot = AppSnapshot(
+        cursor=None,
+        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc)),
+    )
+    assert codex_section_title(snapshot) == "▸ Codex"

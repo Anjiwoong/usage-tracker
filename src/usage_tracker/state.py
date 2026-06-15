@@ -32,6 +32,7 @@ class StateStore:
                     api_percent=self._cursor.api_percent,
                     billing_cycle_end=self._cursor.billing_cycle_end,
                     fetched_at=cursor.fetched_at,
+                    membership_type=self._cursor.membership_type,
                     error=cursor.error,
                 )
         if codex is not None:
@@ -44,6 +45,7 @@ class StateStore:
                     seven_day_used_percent=self._codex.seven_day_used_percent,
                     seven_day_reset_seconds=self._codex.seven_day_reset_seconds,
                     fetched_at=codex.fetched_at,
+                    plan_type=self._codex.plan_type,
                     error=codex.error,
                 )
 

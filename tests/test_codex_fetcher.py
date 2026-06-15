@@ -1,9 +1,16 @@
 import json
 from pathlib import Path
 
-from usage_tracker.codex_fetcher import CodexFetcher, parse_codex_rate_limits
+from usage_tracker.codex_fetcher import CodexFetcher, format_plan_label, parse_codex_rate_limits
 
 FIXTURE = Path(__file__).parent / "fixtures" / "codex_rate_limits.json"
+
+
+def test_format_plan_label():
+    assert format_plan_label("team") == "Team"
+    assert format_plan_label("plus") == "Plus"
+    assert format_plan_label("unknown_tier") == "Unknown Tier"
+    assert format_plan_label(None) == "Codex"
 
 
 def test_parse_codex_rate_limits():
@@ -14,6 +21,7 @@ def test_parse_codex_rate_limits():
     assert usage.five_hour_reset_seconds > 0
     assert usage.seven_day_used_percent == 41.0
     assert usage.seven_day_reset_seconds > 0
+    assert usage.plan_type == "team"
     assert usage.error is None
 
 

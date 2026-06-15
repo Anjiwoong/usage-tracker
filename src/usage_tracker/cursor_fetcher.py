@@ -8,6 +8,24 @@ from usage_tracker.models import CursorUsage
 
 CURSOR_USAGE_URL = "https://cursor.com/api/usage-summary"
 
+CURSOR_MEMBERSHIP_LABELS = {
+    "free": "Free",
+    "pro": "Pro",
+    "pro_plus": "Pro+",
+    "business": "Business",
+    "enterprise": "Enterprise",
+    "ultra": "Ultra",
+}
+
+
+def format_membership_label(membership_type: str | None) -> str:
+    if not membership_type:
+        return "Cursor"
+    return CURSOR_MEMBERSHIP_LABELS.get(
+        membership_type,
+        membership_type.replace("_", " ").title(),
+    )
+
 
 def parse_cursor_response(data: dict) -> CursorUsage:
     plan = data["individualUsage"]["plan"]
@@ -19,6 +37,7 @@ def parse_cursor_response(data: dict) -> CursorUsage:
         api_percent=float(plan["apiPercentUsed"]),
         billing_cycle_end=billing_end,
         fetched_at=datetime.now(timezone.utc),
+        membership_type=data.get("membershipType"),
     )
 
 

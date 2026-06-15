@@ -9,6 +9,25 @@ from datetime import datetime, timezone
 from usage_tracker.models import CodexUsage
 
 
+CODEX_PLAN_LABELS = {
+    "free": "Free",
+    "plus": "Plus",
+    "pro": "Pro",
+    "team": "Team",
+    "business": "Business",
+    "enterprise": "Enterprise",
+}
+
+
+def format_plan_label(plan_type: str | None) -> str:
+    if not plan_type:
+        return "Codex"
+    return CODEX_PLAN_LABELS.get(
+        plan_type,
+        plan_type.replace("_", " ").title(),
+    )
+
+
 def parse_codex_rate_limits(data: dict) -> CodexUsage:
     rate_limits = data.get("rateLimits", data)
     primary = rate_limits["primary"]
@@ -28,6 +47,7 @@ def parse_codex_rate_limits(data: dict) -> CodexUsage:
         seven_day_used_percent=float(secondary["usedPercent"]) if secondary else 0.0,
         seven_day_reset_seconds=reset_seconds(secondary),
         fetched_at=datetime.now(timezone.utc),
+        plan_type=rate_limits.get("planType"),
     )
 
 
