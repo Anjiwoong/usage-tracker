@@ -1,7 +1,7 @@
 [project]
 name = "usage-tracker"
 version = "0.1.0"
-description = "macOS menubar app for Cursor and Codex usage"
+description = "macOS menubar app for Cursor, Codex, and Claude usage"
 requires-python = ">=3.11"
 dependencies = [
     "rumps>=0.4.0",

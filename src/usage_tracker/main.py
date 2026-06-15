@@ -5,16 +5,23 @@ import concurrent.futures
 import rumps
 
 from usage_tracker.alerts import AlertService
+from usage_tracker.claude_fetcher import ClaudeFetcher
 from usage_tracker.codex_fetcher import CodexFetcher
 from usage_tracker.config import load_config
 from usage_tracker.cursor_fetcher import CursorFetcher
 from usage_tracker.menubar_display import apply_menubar_display
 from usage_tracker.menu_style import (
     styled_detail_line,
+    summary_claude_item,
     summary_codex_item,
     summary_cursor_item,
 )
-from usage_tracker.popover import build_detail_lines, codex_summary_label, cursor_summary_label
+from usage_tracker.popover import (
+    build_detail_lines,
+    claude_summary_label,
+    codex_summary_label,
+    cursor_summary_label,
+)
 from usage_tracker.state import StateStore
 
 
@@ -25,10 +32,11 @@ class UsageTrackerApp(rumps.App):
         self.state = StateStore()
         self.cursor_fetcher = CursorFetcher(self.config.cursor_session_token)
         self.codex_fetcher = CodexFetcher()
+        self.claude_fetcher = ClaudeFetcher()
         self.alerts = AlertService(notify=self._send_notification)
 
         self._refresh_item = rumps.MenuItem("↻  지금 새로고침", callback=self.refresh_now)
-        self._settings_item = rumps.MenuItem("⚙  Cursor 토큰 설정", callback=self.show_settings_help)
+        self._settings_item = rumps.MenuItem("⚙  설정 안내", callback=self.show_settings_help)
         self._quit_item = rumps.MenuItem("종료", callback=self.quit_app)
 
         self.timer = rumps.Timer(self.poll, self.config.poll_interval_seconds)
@@ -56,6 +64,7 @@ class UsageTrackerApp(rumps.App):
         menu_items: list[rumps.MenuItem | None] = [
             summary_cursor_item(cursor_summary_label(snapshot)),
             summary_codex_item(codex_summary_label(snapshot)),
+            summary_claude_item(claude_summary_label(snapshot)),
             None,
         ]
 
@@ -77,14 +86,16 @@ class UsageTrackerApp(rumps.App):
         self.menu.update(menu_items)
 
     def poll(self, _sender) -> None:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
             cursor_future = pool.submit(self.cursor_fetcher.fetch)
             codex_future = pool.submit(self.codex_fetcher.fetch)
+            claude_future = pool.submit(self.claude_fetcher.fetch)
             cursor = cursor_future.result()
             codex = codex_future.result()
+            claude = claude_future.result()
 
-        self.state.update(cursor=cursor, codex=codex)
-        self.alerts.check(cursor, codex)
+        self.state.update(cursor=cursor, codex=codex, claude=claude)
+        self.alerts.check(cursor, codex, claude)
         apply_menubar_display(self, self.state)
         self._render_detail_menu()
 
@@ -92,15 +103,17 @@ class UsageTrackerApp(rumps.App):
     def refresh_now(self, _sender) -> None:
         self.poll(None)
 
-    @rumps.clicked("⚙  Cursor 토큰 설정")
+    @rumps.clicked("⚙  설정 안내")
     def show_settings_help(self, _sender) -> None:
         rumps.alert(
-            title="Cursor 토큰 설정",
+            title="설정 안내",
             message=(
+                "Cursor:\n"
                 "1. cursor.com/dashboard/usage 접속\n"
                 "2. DevTools → Cookies → WorkosCursorSessionToken 복사\n"
-                "3. 프로젝트 루트 .env 파일에 CURSOR_SESSION_TOKEN=... 저장\n\n"
-                "Codex는 codex login으로 이미 인증되어 있으면 추가 설정 불필요"
+                "3. .env에 CURSOR_SESSION_TOKEN=... 저장\n\n"
+                "Codex: codex login으로 인증되어 있으면 추가 설정 불필요\n\n"
+                "Claude: claude login으로 인증되어 있으면 추가 설정 불필요"
             ),
         )
 

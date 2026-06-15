@@ -1,61 +1,94 @@
 # Usage Tracker
 
-Cursor Pro+와 Codex(ChatGPT Team) 사용량을 macOS 메뉴바에서 확인하는 개인용 앱입니다.
+Cursor · Codex · Claude 사용량을 macOS 메뉴바에서 확인하는 개인용 앱입니다.
 
-## 요구사항
+---
 
-- macOS
-- Python 3.11+ (권장: Homebrew `python@3.12`)
-- [Codex CLI](https://developers.openai.com/codex) 설치 및 `codex login` 완료
-
-## 설치
+## 빠른 시작
 
 ```bash
 cd usage-tracker
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+usage-tracker
 ```
 
-## Cursor 토큰 설정
+실행되면 **메뉴바 오른쪽**에 아이콘이 나타납니다. 터미널에는 로그가 거의 출력되지 않습니다.
+
+---
+
+## 서비스별 설정
+
+각 서비스는 **독립적**입니다. Cursor만 쓰거나, Codex만 쓰거나, 조합해도 됩니다. 설정 안 된 서비스는 `?`로 표시됩니다.
+
+### Cursor
+
+| | |
+| --- | --- |
+| **필요한 것** | Cursor Pro+ (또는 사용량 대시보드 접근 가능한 계정) |
+| **`.env` 필요?** | ✅ 예 |
+| **인증 방식** | 브라우저 쿠키에서 세션 토큰 복사 |
+
+**설정 방법**
 
 1. [cursor.com/dashboard/usage](https://cursor.com/dashboard/usage) 접속
 2. DevTools → Application → Cookies → `WorkosCursorSessionToken` 복사
-3. `.env` 파일 생성:
+3. 프로젝트 루트에 `.env` 생성 후 토큰 입력
 
 ```bash
 cp .env.example .env
-# .env에 CURSOR_SESSION_TOKEN=... 입력
+# .env 파일을 열어 아래 값 입력
+# CURSOR_SESSION_TOKEN=복사한_토큰
 ```
+
+토큰은 주기적으로 만료됩니다. Cursor 쪽이 `?`로 바뀌면 위 과정을 다시 하세요.
+
+---
+
+### Codex
+
+| | |
+| --- | --- |
+| **필요한 것** | [Codex CLI](https://developers.openai.com/codex) + ChatGPT Team(또는 Codex 사용 가능한 플랜) |
+| **`.env` 필요?** | ❌ 아니오 |
+| **인증 방식** | CLI 로그인 |
+
+**설정 방법**
+
+```bash
+# Codex CLI가 없다면 먼저 설치 (OpenAI 문서 참고)
+codex login
+```
+
+`codex login`으로 이미 인증되어 있으면 **추가 설정 없음**. 앱이 로컬 `codex app-server`로 사용량을 조회합니다.
+
+---
+
+### Claude
+
+| | |
+| --- | --- |
+| **필요한 것** | [Claude Code CLI](https://code.claude.com/docs/en/setup) + Claude Pro/Max 구독 |
+| **`.env` 필요?** | ❌ 아니오 |
+| **인증 방식** | CLI 로그인 |
+
+**설정 방법**
+
+```bash
+npm install -g @anthropic-ai/claude-code   # Node.js 18+ 필요
+claude login
+```
+
+`claude login` 완료 시 `~/.claude/.credentials.json`이 생성되고, 앱이 자동으로 OAuth 토큰을 읽습니다.
+
+구독 전이거나 로그인 전이면 Claude 항목에 `?`가 표시됩니다. Cursor/Codex는 영향 없습니다.
+
+---
 
 ## 실행
 
-### 1. 실행 전 확인
-
-아래가 모두 준비되어 있어야 합니다.
-
-- 가상환경 설치 완료 (`pip install -e ".[dev]"`)
-- 프로젝트 루트에 `.env` 파일 생성 및 `CURSOR_SESSION_TOKEN` 입력
-- Codex CLI 로그인 완료 (`codex login`)
-
-`.env` 예시:
-
-```bash
-cp .env.example .env
-# .env 파일을 열어 CURSOR_SESSION_TOKEN 값을 본인 토큰으로 교체
-```
-
-선택 환경 변수:
-
-| 변수 | 기본값 | 설명 |
-| --- | --- | --- |
-| `POLL_INTERVAL_SECONDS` | `60` | 사용량 갱신 주기(초) |
-| `ALERT_THRESHOLD_WARN` | `80` | 경고 알림 임계값(%) |
-| `ALERT_THRESHOLD_CRITICAL` | `90` | 위험 알림 임계값(%) |
-
-### 2. 앱 실행
-
-프로젝트 루트에서 가상환경을 활성화한 뒤 실행합니다.
+### 실행
 
 ```bash
 cd usage-tracker
@@ -63,50 +96,63 @@ source .venv/bin/activate
 usage-tracker
 ```
 
-`usage-tracker` 명령이 없으면 아래 방법도 사용할 수 있습니다.
+`usage-tracker` 명령이 없으면:
 
 ```bash
 python -m usage_tracker.main
 ```
 
-터미널에는 로그가 거의 출력되지 않습니다. 실행에 성공하면 **메뉴바 오른쪽**에 사용량 아이콘이 나타납니다.
+코드를 수정했다면 실행 중인 앱을 **종료 후 다시 실행**하세요 (`pip install -e`로 설치했으면 재설치 불필요).
 
-### 3. 사용 방법
+### 종료
 
-- 메뉴바 표시 예: `🟡 38%╱76%` (왼쪽 Cursor, 오른쪽 Codex)
-- 아이콘 클릭: Cursor / Codex 상세 사용량 breakdown 확인
-- `↻ 지금 새로고침`: 즉시 다시 조회
-- `⚙ Cursor 토큰 설정`: 토큰 갱신 방법 안내
-- `종료`: 앱 종료
+메뉴바 아이콘 → **종료**, 또는 터미널에서 `Ctrl+C`
 
-Cursor 토큰이 없거나 만료되면 Cursor 쪽 수치가 비어 있거나 갱신되지 않을 수 있습니다. 이 경우 `.env`의 `CURSOR_SESSION_TOKEN`을 다시 설정하세요.
+### 사용법
 
-### 4. 종료
-
-메뉴바 아이콘 → `종료`를 선택하거나, 터미널에서 실행 중이었다면 `Ctrl+C`로 종료합니다.
-
-### 5. 실행 문제 해결
-
-| 증상 | 확인 방법 |
+| 동작 | 설명 |
 | --- | --- |
-| 메뉴바에 아이콘이 안 보임 | Dock/메뉴바 공간 확인, 터미널에 Python 오류가 없는지 확인 |
-| Cursor 사용량이 `-` 또는 0 | `.env`의 `CURSOR_SESSION_TOKEN` 값 확인 |
-| Codex 사용량이 안 나옴 | `codex login` 상태 확인, Codex CLI 설치 여부 확인 |
-| 자동 시작 후 실행 안 됨 | `tail ~/Library/Logs/usage-tracker/stderr.log` 로그 확인 |
+| 메뉴바 아이콘 | Cursor · Codex · Claude 각 사용률(%) |
+| 아이콘 클릭 | 서비스별 상세 breakdown (5시간/1주, API 등) |
+| ↻ 지금 새로고침 | 즉시 다시 조회 |
+| ⚙ 설정 안내 | 토큰·로그인 방법 요약 |
+| 종료 | 앱 종료 |
 
-## 로그인 시 자동 시작
+60초마다 자동 갱신됩니다. 주기는 `.env`의 `POLL_INTERVAL_SECONDS`로 변경 가능 (기본 `60`).
 
-Mac 로그인할 때마다 자동으로 메뉴바에 뜨게 하려면:
+---
+
+## 문제 해결
+
+| 증상 | 해결 |
+| --- | --- |
+| 메뉴바에 아이콘 없음 | 메뉴바 공간 확인, 터미널 오류 확인 |
+| Cursor `?` | `.env`의 `CURSOR_SESSION_TOKEN` 확인·갱신 |
+| Codex `?` | `codex login` 재실행, Codex CLI 설치 확인 |
+| Claude `?` | Pro/Max 구독 확인, `claude login` 재실행 |
+| 자동 시작 실패 | `tail ~/Library/Logs/usage-tracker/stderr.log` |
+
+---
+
+## 선택 설정 (`.env`)
+
+Cursor 토큰 외에는 모두 선택입니다.
+
+| 변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `CURSOR_SESSION_TOKEN` | (없음) | Cursor 세션 토큰 |
+| `POLL_INTERVAL_SECONDS` | `60` | 갱신 주기(초) |
+| `ALERT_THRESHOLD_WARN` | `80` | 경고 알림 임계값(%) |
+| `ALERT_THRESHOLD_CRITICAL` | `90` | 위험 알림 임계값(%) |
+
+---
+
+## Mac 로그인 시 자동 시작
 
 ```bash
 chmod +x scripts/install-autostart.sh scripts/uninstall-autostart.sh
-./scripts/install-autostart.sh
-```
-
-해제:
-
-```bash
-./scripts/uninstall-autostart.sh
+./scripts/install-autostart.sh    # 등록
+./scripts/uninstall-autostart.sh  # 해제
 ```
 
 로그: `~/Library/Logs/usage-tracker/`
@@ -119,6 +165,6 @@ pytest -v
 
 ## 알려진 제한
 
-- Cursor API는 비공식 엔드포인트입니다. 변경될 수 있습니다.
-- 세션 토큰은 주기적으로 만료됩니다. 만료 시 `.env`를 갱신하세요.
+- Cursor·Claude usage API는 비공식 엔드포인트입니다.
 - Codex는 로컬 `codex app-server` JSON-RPC를 사용합니다.
+- Claude 한도는 웹·앱·CLI 전체가 공유됩니다.

@@ -141,9 +141,17 @@ def codex_summary_label(snapshot: AppSnapshot) -> str:
     return "—"
 
 
+def claude_summary_label(snapshot: AppSnapshot) -> str:
+    if snapshot.claude and not snapshot.claude.error:
+        return format_metric_line("5시간", snapshot.claude.five_hour_used_percent)
+    if snapshot.claude and snapshot.claude.error:
+        return "⚠  조회 실패"
+    return "—"
+
+
 def format_updated_at(snapshot: AppSnapshot, stale: bool) -> str:
     latest: datetime | None = None
-    for usage in (snapshot.cursor, snapshot.codex):
+    for usage in (snapshot.cursor, snapshot.codex, snapshot.claude):
         if usage and not usage.error:
             if latest is None or usage.fetched_at > latest:
                 latest = usage.fetched_at
@@ -175,6 +183,10 @@ def codex_section_title(snapshot: AppSnapshot) -> str:
     return "▸ Codex"
 
 
+def claude_section_title(_snapshot: AppSnapshot) -> str:
+    return "▸ Claude"
+
+
 def build_detail_lines(snapshot: AppSnapshot, stale: bool) -> list[str]:
     lines: list[str] = [cursor_section_title(snapshot)]
 
@@ -198,6 +210,19 @@ def build_detail_lines(snapshot: AppSnapshot, stale: bool) -> list[str]:
         lines.append(format_codex_weekly_reset_line(x.fetched_at, x.seven_day_reset_seconds))
     elif snapshot.codex and snapshot.codex.error:
         lines.append(f"   ⚠ {snapshot.codex.error}")
+    else:
+        lines.append("   데이터 없음")
+
+    lines.extend(["", claude_section_title(snapshot)])
+
+    if snapshot.claude and not snapshot.claude.error:
+        c = snapshot.claude
+        lines.append(format_metric_line("5시간", c.five_hour_used_percent))
+        lines.append(format_codex_five_hour_reset_line(c.fetched_at, c.five_hour_reset_seconds))
+        lines.append(format_metric_line("1주", c.seven_day_used_percent))
+        lines.append(format_codex_weekly_reset_line(c.fetched_at, c.seven_day_reset_seconds))
+    elif snapshot.claude and snapshot.claude.error:
+        lines.append(f"   ⚠ {snapshot.claude.error}")
     else:
         lines.append("   데이터 없음")
 

@@ -1,0 +1,15 @@
+{
+  "five_hour": {
+    "utilization": 23.5,
+    "resets_at": "2030-06-12T14:30:00+00:00"
+  },
+  "seven_day": {
+    "utilization": 41.2,
+    "resets_at": "2030-06-19T03:00:00+00:00"
+  },
+  "seven_day_sonnet": {
+    "utilization": 3.0,
+    "resets_at": "2030-06-19T19:00:00+00:00"
+  },
+  "seven_day_opus": null
+}

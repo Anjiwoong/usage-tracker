@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 
-from usage_tracker.models import AppSnapshot, CodexUsage, CursorUsage
+from usage_tracker.models import AppSnapshot, ClaudeUsage, CodexUsage, CursorUsage
 from usage_tracker.popover import (
     build_detail_lines,
     build_detail_text,
+    claude_section_title,
+    claude_summary_label,
     codex_section_title,
     codex_summary_label,
     cursor_section_title,
@@ -69,9 +71,11 @@ def test_summary_labels():
             membership_type="pro_plus",
         ),
         codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc), plan_type="team"),
+        claude=ClaudeUsage(24, 12000, 17, 345600, datetime.now(timezone.utc)),
     )
     assert cursor_summary_label(snapshot) == format_metric_line("Auto+Composer", 38)
     assert codex_summary_label(snapshot) == format_metric_line("5시간", 52)
+    assert claude_summary_label(snapshot) == format_metric_line("5시간", 24)
 
 
 def test_cursor_billing_reset_line():
@@ -110,11 +114,13 @@ def test_build_detail_lines():
             membership_type="pro_plus",
         ),
         codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc), plan_type="team"),
+        claude=ClaudeUsage(24, 12000, 17, 345600, datetime.now(timezone.utc)),
     )
     lines = build_detail_lines(snapshot, stale=False)
 
     assert lines[0] == "▸ Cursor Pro+"
     assert "▸ Codex Team" in lines
+    assert "▸ Claude" in lines
     assert any("Auto+Composer" in line for line in lines)
     assert any("5시간" in line for line in lines)
     assert any("갱신" in line for line in lines)
@@ -145,6 +151,14 @@ def test_cursor_section_title_without_membership():
         codex=None,
     )
     assert cursor_section_title(snapshot) == "▸ Cursor"
+
+
+def test_claude_section_title():
+    snapshot = AppSnapshot(
+        cursor=None,
+        claude=ClaudeUsage(24, 12000, 17, 345600, datetime.now(timezone.utc)),
+    )
+    assert claude_section_title(snapshot) == "▸ Claude"
 
 
 def test_codex_section_title_without_plan():

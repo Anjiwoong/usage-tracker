@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from typing import Callable
 
-from usage_tracker.models import CodexUsage, CursorUsage
+from usage_tracker.models import ClaudeUsage, CodexUsage, CursorUsage
 
 NotifyFn = Callable[[str, float, int], None]
 
 ALERT_THRESHOLDS = (80, 90, 100)
+
+RateLimitUsage = CodexUsage | ClaudeUsage
 
 
 class AlertService:
@@ -15,7 +17,7 @@ class AlertService:
         self._last_percent: dict[tuple[str, str], float] = {}
         self._initialized: set[tuple[str, str]] = set()
 
-    def _period_key(self, service: str, usage: CursorUsage | CodexUsage) -> str:
+    def _period_key(self, service: str, usage: CursorUsage | RateLimitUsage) -> str:
         if isinstance(usage, CursorUsage):
             return f"{service}:{usage.billing_cycle_end.isoformat()}"
         return f"{service}:{usage.five_hour_reset_seconds}"
@@ -24,7 +26,7 @@ class AlertService:
         self,
         service: str,
         percent: float,
-        usage: CursorUsage | CodexUsage,
+        usage: CursorUsage | RateLimitUsage,
     ) -> None:
         period = self._period_key(service, usage)
         track_key = (service, period)
@@ -45,8 +47,11 @@ class AlertService:
         self,
         cursor: CursorUsage | None,
         codex: CodexUsage | None,
+        claude: ClaudeUsage | None = None,
     ) -> None:
         if cursor and not cursor.error:
             self._check_metric("Cursor", cursor.auto_percent, cursor)
         if codex and not codex.error:
             self._check_metric("Codex", codex.five_hour_used_percent, codex)
+        if claude and not claude.error:
+            self._check_metric("Claude", claude.five_hour_used_percent, claude)

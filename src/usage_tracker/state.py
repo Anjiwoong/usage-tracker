@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from usage_tracker.models import AppSnapshot, CodexUsage, CursorUsage, StatusLevel
+from usage_tracker.models import AppSnapshot, ClaudeUsage, CodexUsage, CursorUsage, StatusLevel
 
 STATUS_EMOJI = {
     StatusLevel.GREEN: "🟢",
@@ -17,11 +17,13 @@ class StateStore:
     def __init__(self) -> None:
         self._cursor: CursorUsage | None = None
         self._codex: CodexUsage | None = None
+        self._claude: ClaudeUsage | None = None
 
     def update(
         self,
         cursor: CursorUsage | None = None,
         codex: CodexUsage | None = None,
+        claude: ClaudeUsage | None = None,
     ) -> None:
         if cursor is not None:
             if cursor.error is None or self._cursor is None:
@@ -48,9 +50,21 @@ class StateStore:
                     plan_type=self._codex.plan_type,
                     error=codex.error,
                 )
+        if claude is not None:
+            if claude.error is None or self._claude is None:
+                self._claude = claude
+            else:
+                self._claude = ClaudeUsage(
+                    five_hour_used_percent=self._claude.five_hour_used_percent,
+                    five_hour_reset_seconds=self._claude.five_hour_reset_seconds,
+                    seven_day_used_percent=self._claude.seven_day_used_percent,
+                    seven_day_reset_seconds=self._claude.seven_day_reset_seconds,
+                    fetched_at=claude.fetched_at,
+                    error=claude.error,
+                )
 
     def snapshot(self) -> AppSnapshot:
-        return AppSnapshot(cursor=self._cursor, codex=self._codex)
+        return AppSnapshot(cursor=self._cursor, codex=self._codex, claude=self._claude)
 
     def _cursor_display(self) -> str:
         if self._cursor is None or self._cursor.error:
@@ -62,23 +76,33 @@ class StateStore:
             return "?"
         return f"{self._codex.five_hour_used_percent:.0f}"
 
+    def _claude_display(self) -> str:
+        if self._claude is None or self._claude.error:
+            return "?"
+        return f"{self._claude.five_hour_used_percent:.0f}"
+
     def menubar_cursor_label(self) -> str:
         return self._cursor_display()
 
     def menubar_codex_label(self) -> str:
         return self._codex_display()
 
+    def menubar_claude_label(self) -> str:
+        return self._claude_display()
+
     def is_unavailable(self) -> bool:
-        return self._cursor is None and self._codex is None
+        return self._cursor is None and self._codex is None and self._claude is None
 
     def menubar_title_fallback(self) -> str:
         if self.is_unavailable():
             return "⚠ —"
         cursor_emoji = STATUS_EMOJI[self.cursor_status_level()]
         codex_emoji = STATUS_EMOJI[self.codex_status_level()]
+        claude_emoji = STATUS_EMOJI[self.claude_status_level()]
         return (
             f"{cursor_emoji} {self._cursor_display()}%  ·  "
-            f"{codex_emoji} {self._codex_display()}%"
+            f"{codex_emoji} {self._codex_display()}%  ·  "
+            f"{claude_emoji} {self._claude_display()}%"
         )
 
     def menubar_title(self) -> str:
@@ -94,19 +118,26 @@ class StateStore:
             return StatusLevel.YELLOW
         return StatusLevel.from_percent(self._codex.five_hour_used_percent)
 
+    def claude_status_level(self) -> StatusLevel:
+        if self._claude is None or self._claude.error:
+            return StatusLevel.YELLOW
+        return StatusLevel.from_percent(self._claude.five_hour_used_percent)
+
     def status_level(self) -> StatusLevel:
         percents: list[float] = []
         if self._cursor and not self._cursor.error:
             percents.append(self._cursor.auto_percent)
         if self._codex and not self._codex.error:
             percents.append(self._codex.five_hour_used_percent)
+        if self._claude and not self._claude.error:
+            percents.append(self._claude.five_hour_used_percent)
         if not percents:
             return StatusLevel.YELLOW
         return StatusLevel.from_percent(max(percents))
 
     def is_stale(self) -> bool:
         now = datetime.now(timezone.utc)
-        for usage in (self._cursor, self._codex):
+        for usage in (self._cursor, self._codex, self._claude):
             if usage and not usage.error:
                 if now - usage.fetched_at > STALE_AFTER:
                     return True

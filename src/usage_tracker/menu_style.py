@@ -10,7 +10,7 @@ from AppKit import (
     NSMutableAttributedString,
 )
 
-from usage_tracker.icons import codex_icon_path, cursor_icon_path
+from usage_tracker.icons import claude_icon_path, codex_icon_path, cursor_icon_path
 from usage_tracker.models import StatusLevel
 from usage_tracker.popover import (
     EMPTY_CHAR,
@@ -145,3 +145,7 @@ def summary_cursor_item(label: str) -> rumps.MenuItem:
 
 def summary_codex_item(label: str) -> rumps.MenuItem:
     return _summary_item(label, codex_icon_path())
+
+
+def summary_claude_item(label: str) -> rumps.MenuItem:
+    return _summary_item(label, claude_icon_path())

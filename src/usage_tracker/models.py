@@ -41,6 +41,17 @@ class CodexUsage:
 
 
 @dataclass
+class ClaudeUsage:
+    five_hour_used_percent: float
+    five_hour_reset_seconds: int
+    seven_day_used_percent: float
+    seven_day_reset_seconds: int
+    fetched_at: datetime
+    error: str | None = None
+
+
+@dataclass
 class AppSnapshot:
     cursor: CursorUsage | None = None
     codex: CodexUsage | None = None
+    claude: ClaudeUsage | None = None

@@ -8,7 +8,7 @@ from AppKit import (
     NSTextAttachment,
 )
 
-from usage_tracker.icons import codex_icon_path, cursor_icon_path
+from usage_tracker.icons import claude_icon_path, codex_icon_path, cursor_icon_path
 from usage_tracker.models import StatusLevel
 from usage_tracker.state import STATUS_EMOJI, StateStore
 
@@ -36,8 +36,10 @@ def _icon_attachment(path: str | None, fallback: str) -> NSAttributedString:
 def build_menubar_attributed_title(
     cursor_label: str,
     codex_label: str,
+    claude_label: str,
     cursor_status: StatusLevel,
     codex_status: StatusLevel,
+    claude_status: StatusLevel,
 ) -> NSMutableAttributedString:
     font = NSFont.menuBarFontOfSize_(0)
     attributes = {NSFontAttributeName: font}
@@ -52,7 +54,10 @@ def build_menubar_attributed_title(
     append_text(f" {cursor_label}%   ")
     append_text(f"{STATUS_EMOJI[codex_status]} ")
     result.appendAttributedString_(_icon_attachment(codex_icon_path(), "◈"))
-    append_text(f" {codex_label}%")
+    append_text(f" {codex_label}%   ")
+    append_text(f"{STATUS_EMOJI[claude_status]} ")
+    result.appendAttributedString_(_icon_attachment(claude_icon_path(), "◇"))
+    append_text(f" {claude_label}%")
     return result
 
 
@@ -64,6 +69,7 @@ def apply_menubar_display(app, state: StateStore) -> None:
 
     cursor_label = state.menubar_cursor_label()
     codex_label = state.menubar_codex_label()
+    claude_label = state.menubar_claude_label()
 
     try:
         nsitem = app._nsapp.nsstatusitem
@@ -72,8 +78,10 @@ def apply_menubar_display(app, state: StateStore) -> None:
         attributed = build_menubar_attributed_title(
             cursor_label,
             codex_label,
+            claude_label,
             state.cursor_status_level(),
             state.codex_status_level(),
+            state.claude_status_level(),
         )
         button = nsitem.button()
         if button is not None:
