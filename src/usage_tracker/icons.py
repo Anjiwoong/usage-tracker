@@ -1,0 +1,31 @@
+from __future__ import annotations
+
+import os
+from functools import lru_cache
+
+CURSOR_ICON_CANDIDATES = (
+    "/Applications/Cursor.app/Contents/Resources/Cursor.icns",
+    "/Applications/Cursor.app/Contents/Resources/AppIcon.icns",
+)
+
+CODEX_ICON_CANDIDATES = (
+    "/Applications/Codex.app/Contents/Resources/icon.icns",
+    "/Applications/Codex.app/Contents/Resources/app.icns",
+)
+
+
+def resolve_icon_path(candidates: tuple[str, ...]) -> str | None:
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+@lru_cache(maxsize=2)
+def cursor_icon_path() -> str | None:
+    return resolve_icon_path(CURSOR_ICON_CANDIDATES)
+
+
+@lru_cache(maxsize=2)
+def codex_icon_path() -> str | None:
+    return resolve_icon_path(CODEX_ICON_CANDIDATES)
