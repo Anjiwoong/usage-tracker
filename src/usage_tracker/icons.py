@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
+
+_PACKAGE_DIR = Path(__file__).resolve().parent
+BUNDLED_CLAUDE_ICON = _PACKAGE_DIR / "assets" / "claude.png"
 
 CURSOR_ICON_CANDIDATES = (
     "/Applications/Cursor.app/Contents/Resources/Cursor.icns",
@@ -16,6 +20,7 @@ CODEX_ICON_CANDIDATES = (
 CLAUDE_ICON_CANDIDATES = (
     "/Applications/Claude.app/Contents/Resources/AppIcon.icns",
     "/Applications/Claude.app/Contents/Resources/app.icns",
+    str(BUNDLED_CLAUDE_ICON),
 )
 
 

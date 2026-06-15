@@ -126,6 +126,55 @@ def test_build_detail_lines():
     assert any("갱신" in line for line in lines)
 
 
+def test_build_detail_lines_error_shows_message_only():
+    snapshot = AppSnapshot(
+        cursor=CursorUsage(
+            0,
+            0,
+            datetime(2026, 5, 2, tzinfo=timezone.utc),
+            datetime.now(timezone.utc),
+            error="CURSOR_SESSION_TOKEN이 설정되지 않았습니다",
+        ),
+        codex=CodexUsage(52, 12000, 41, 345600, datetime.now(timezone.utc), plan_type="team"),
+        claude=ClaudeUsage(
+            0,
+            0,
+            0,
+            0,
+            datetime.now(timezone.utc),
+            error="Claude Code 로그인 필요: `claude login` 실행",
+        ),
+    )
+    lines = build_detail_lines(snapshot, stale=False)
+    text = "\n".join(lines)
+
+    assert "▸ Cursor" in text
+    assert "CURSOR_SESSION_TOKEN" in text
+    assert "Auto+Composer" not in text
+    assert "▸ Claude" in text
+    assert "claude login" in text
+    assert "▸ Codex Team" in text
+
+
+def test_build_detail_lines_skips_unfetched_service():
+    snapshot = AppSnapshot(
+        cursor=CursorUsage(
+            38,
+            12,
+            datetime(2026, 5, 2, tzinfo=timezone.utc),
+            datetime.now(timezone.utc),
+        ),
+        codex=None,
+        claude=None,
+    )
+    lines = build_detail_lines(snapshot, stale=False)
+    text = "\n".join(lines)
+
+    assert "▸ Cursor" in text
+    assert "▸ Codex" not in text
+    assert "▸ Claude" not in text
+
+
 def test_build_detail_text():
     snapshot = AppSnapshot(
         cursor=CursorUsage(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from usage_tracker.models import AppSnapshot, ClaudeUsage, CodexUsage, CursorUsage, StatusLevel
@@ -11,6 +12,13 @@ STATUS_EMOJI = {
 }
 
 STALE_AFTER = timedelta(minutes=5)
+
+
+@dataclass(frozen=True)
+class MenubarEntry:
+    service: str
+    label: str
+    status: StatusLevel
 
 
 class StateStore:
@@ -90,20 +98,49 @@ class StateStore:
     def menubar_claude_label(self) -> str:
         return self._claude_display()
 
+    def menubar_entries(self) -> list[MenubarEntry]:
+        entries: list[MenubarEntry] = []
+        if self._cursor and not self._cursor.error:
+            entries.append(
+                MenubarEntry(
+                    "cursor",
+                    f"{self._cursor.auto_percent:.0f}",
+                    StatusLevel.from_percent(self._cursor.auto_percent),
+                )
+            )
+        if self._codex and not self._codex.error:
+            entries.append(
+                MenubarEntry(
+                    "codex",
+                    f"{self._codex.five_hour_used_percent:.0f}",
+                    StatusLevel.from_percent(self._codex.five_hour_used_percent),
+                )
+            )
+        if self._claude and not self._claude.error:
+            entries.append(
+                MenubarEntry(
+                    "claude",
+                    f"{self._claude.five_hour_used_percent:.0f}",
+                    StatusLevel.from_percent(self._claude.five_hour_used_percent),
+                )
+            )
+        return entries
+
+    def has_menubar_entries(self) -> bool:
+        return bool(self.menubar_entries())
+
     def is_unavailable(self) -> bool:
-        return self._cursor is None and self._codex is None and self._claude is None
+        return not self.has_menubar_entries()
 
     def menubar_title_fallback(self) -> str:
-        if self.is_unavailable():
+        entries = self.menubar_entries()
+        if not entries:
             return "⚠ —"
-        cursor_emoji = STATUS_EMOJI[self.cursor_status_level()]
-        codex_emoji = STATUS_EMOJI[self.codex_status_level()]
-        claude_emoji = STATUS_EMOJI[self.claude_status_level()]
-        return (
-            f"{cursor_emoji} {self._cursor_display()}%  ·  "
-            f"{codex_emoji} {self._codex_display()}%  ·  "
-            f"{claude_emoji} {self._claude_display()}%"
-        )
+        parts = [
+            f"{STATUS_EMOJI[entry.status]} {entry.label}%"
+            for entry in entries
+        ]
+        return "  ·  ".join(parts)
 
     def menubar_title(self) -> str:
         return self.menubar_title_fallback()

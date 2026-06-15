@@ -9,10 +9,15 @@ from AppKit import (
 )
 
 from usage_tracker.icons import claude_icon_path, codex_icon_path, cursor_icon_path
-from usage_tracker.models import StatusLevel
-from usage_tracker.state import STATUS_EMOJI, StateStore
+from usage_tracker.state import STATUS_EMOJI, MenubarEntry, StateStore
 
 ICON_SIZE = 14.0
+
+SERVICE_ICONS = {
+    "cursor": (cursor_icon_path, "◆"),
+    "codex": (codex_icon_path, "◈"),
+    "claude": (claude_icon_path, "◇"),
+}
 
 
 def _scaled_icon(path: str):
@@ -33,14 +38,7 @@ def _icon_attachment(path: str | None, fallback: str) -> NSAttributedString:
     return NSAttributedString.alloc().initWithString_(fallback)
 
 
-def build_menubar_attributed_title(
-    cursor_label: str,
-    codex_label: str,
-    claude_label: str,
-    cursor_status: StatusLevel,
-    codex_status: StatusLevel,
-    claude_status: StatusLevel,
-) -> NSMutableAttributedString:
+def build_menubar_attributed_title(entries: list[MenubarEntry]) -> NSMutableAttributedString:
     font = NSFont.menuBarFontOfSize_(0)
     attributes = {NSFontAttributeName: font}
     result = NSMutableAttributedString.alloc().init()
@@ -49,40 +47,28 @@ def build_menubar_attributed_title(
         part = NSAttributedString.alloc().initWithString_attributes_(text, attributes)
         result.appendAttributedString_(part)
 
-    append_text(f"{STATUS_EMOJI[cursor_status]} ")
-    result.appendAttributedString_(_icon_attachment(cursor_icon_path(), "◆"))
-    append_text(f" {cursor_label}%   ")
-    append_text(f"{STATUS_EMOJI[codex_status]} ")
-    result.appendAttributedString_(_icon_attachment(codex_icon_path(), "◈"))
-    append_text(f" {codex_label}%   ")
-    append_text(f"{STATUS_EMOJI[claude_status]} ")
-    result.appendAttributedString_(_icon_attachment(claude_icon_path(), "◇"))
-    append_text(f" {claude_label}%")
+    for index, entry in enumerate(entries):
+        if index > 0:
+            append_text("   ")
+        icon_fn, fallback = SERVICE_ICONS[entry.service]
+        append_text(f"{STATUS_EMOJI[entry.status]} ")
+        result.appendAttributedString_(_icon_attachment(icon_fn(), fallback))
+        append_text(f" {entry.label}%")
     return result
 
 
 def apply_menubar_display(app, state: StateStore) -> None:
-    if state.is_unavailable():
+    entries = state.menubar_entries()
+    if not entries:
         app.title = "⚠ —"
         app.icon = None
         return
-
-    cursor_label = state.menubar_cursor_label()
-    codex_label = state.menubar_codex_label()
-    claude_label = state.menubar_claude_label()
 
     try:
         nsitem = app._nsapp.nsstatusitem
         nsitem.setImage_(None)
         nsitem.setTitle_("")
-        attributed = build_menubar_attributed_title(
-            cursor_label,
-            codex_label,
-            claude_label,
-            state.cursor_status_level(),
-            state.codex_status_level(),
-            state.claude_status_level(),
-        )
+        attributed = build_menubar_attributed_title(entries)
         button = nsitem.button()
         if button is not None:
             button.setAttributedTitle_(attributed)

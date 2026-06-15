@@ -20,7 +20,7 @@ usage-tracker
 
 ## 서비스별 설정
 
-각 서비스는 **독립적**입니다. Cursor만 쓰거나, Codex만 쓰거나, 조합해도 됩니다. 설정 안 된 서비스는 `?`로 표시됩니다.
+각 서비스는 **독립적**입니다. Cursor만 쓰거나, Codex만 쓰거나, 조합해도 됩니다. 설정·로그인이 안 된 서비스는 다른 서비스에 영향을 주지 않습니다.
 
 ### Cursor
 
@@ -42,7 +42,7 @@ cp .env.example .env
 # CURSOR_SESSION_TOKEN=복사한_토큰
 ```
 
-토큰은 주기적으로 만료됩니다. Cursor 쪽이 `?`로 바뀌면 위 과정을 다시 하세요.
+토큰은 주기적으로 만료됩니다. Cursor 쪽이 조회 실패로 바뀌면 위 과정을 다시 하세요.
 
 ---
 
@@ -80,9 +80,9 @@ npm install -g @anthropic-ai/claude-code   # Node.js 18+ 필요
 claude login
 ```
 
-`claude login` 완료 시 `~/.claude/.credentials.json`이 생성되고, 앱이 자동으로 OAuth 토큰을 읽습니다.
+`claude login` 완료 시 `~/.claude/.credentials.json`이 생성되고, 앱이 자동으로 OAuth 토큰을 읽습니다. Claude Desktop 앱은 필수가 아닙니다(아이콘은 앱에 번들되어 있음).
 
-구독 전이거나 로그인 전이면 Claude 항목에 `?`가 표시됩니다. Cursor/Codex는 영향 없습니다.
+구독 전이거나 로그인 전이면 메뉴 요약에 `⚠ 조회 실패`가 표시됩니다. 메뉴바에는 조회 가능한 서비스만 나타납니다.
 
 ---
 
@@ -110,10 +110,11 @@ python -m usage_tracker.main
 
 ### 사용법
 
-| 동작 | 설명 |
+| 위치 | 표시 방식 |
 | --- | --- |
-| 메뉴바 아이콘 | Cursor · Codex · Claude 각 사용률(%) |
-| 아이콘 클릭 | 서비스별 상세 breakdown (5시간/1주, API 등) |
+| **메뉴바** | 조회 **성공한** 서비스만 아이콘 + 사용률(%) |
+| **메뉴 상단 요약** | Cursor · Codex · Claude 항상 표시 — 실패 시 `⚠ 조회 실패` |
+| **메뉴 상세** | 성공: 전체 breakdown / 실패: 제목 + 안내 문구만 |
 | ↻ 지금 새로고침 | 즉시 다시 조회 |
 | ⚙ 설정 안내 | 토큰·로그인 방법 요약 |
 | 종료 | 앱 종료 |
@@ -127,9 +128,10 @@ python -m usage_tracker.main
 | 증상 | 해결 |
 | --- | --- |
 | 메뉴바에 아이콘 없음 | 메뉴바 공간 확인, 터미널 오류 확인 |
-| Cursor `?` | `.env`의 `CURSOR_SESSION_TOKEN` 확인·갱신 |
-| Codex `?` | `codex login` 재실행, Codex CLI 설치 확인 |
-| Claude `?` | Pro/Max 구독 확인, `claude login` 재실행 |
+| 메뉴바에 `⚠ —` | 조회 가능한 서비스가 없음 — 각 서비스 설정 확인 |
+| Cursor 조회 실패 | `.env`의 `CURSOR_SESSION_TOKEN` 확인·갱신 |
+| Codex 조회 실패 | `codex login` 재실행, Codex CLI 설치 확인 |
+| Claude 조회 실패 | Pro/Max 구독 확인, `claude login` 재실행 |
 | 자동 시작 실패 | `tail ~/Library/Logs/usage-tracker/stderr.log` |
 
 ---

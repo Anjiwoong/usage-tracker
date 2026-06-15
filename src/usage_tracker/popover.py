@@ -187,46 +187,68 @@ def claude_section_title(_snapshot: AppSnapshot) -> str:
     return "▸ Claude"
 
 
+def _append_section(lines: list[str], section: list[str]) -> None:
+    if not section:
+        return
+    if lines:
+        lines.append("")
+    lines.extend(section)
+
+
+def _cursor_detail_section(snapshot: AppSnapshot) -> list[str]:
+    usage = snapshot.cursor
+    if usage is None:
+        return []
+    lines = [cursor_section_title(snapshot)]
+    if usage.error:
+        lines.append(f"   ⚠ {usage.error}")
+        return lines
+    lines.append(format_metric_line("Auto+Composer", usage.auto_percent))
+    lines.append(format_metric_line("API", usage.api_percent))
+    lines.append(format_cursor_billing_reset_line(usage.fetched_at, usage.billing_cycle_end))
+    return lines
+
+
+def _codex_detail_section(snapshot: AppSnapshot) -> list[str]:
+    usage = snapshot.codex
+    if usage is None:
+        return []
+    lines = [codex_section_title(snapshot)]
+    if usage.error:
+        lines.append(f"   ⚠ {usage.error}")
+        return lines
+    lines.append(format_metric_line("5시간", usage.five_hour_used_percent))
+    lines.append(format_codex_five_hour_reset_line(usage.fetched_at, usage.five_hour_reset_seconds))
+    lines.append(format_metric_line("1주", usage.seven_day_used_percent))
+    lines.append(format_codex_weekly_reset_line(usage.fetched_at, usage.seven_day_reset_seconds))
+    return lines
+
+
+def _claude_detail_section(snapshot: AppSnapshot) -> list[str]:
+    usage = snapshot.claude
+    if usage is None:
+        return []
+    lines = [claude_section_title(snapshot)]
+    if usage.error:
+        lines.append(f"   ⚠ {usage.error}")
+        return lines
+    lines.append(format_metric_line("5시간", usage.five_hour_used_percent))
+    lines.append(format_codex_five_hour_reset_line(usage.fetched_at, usage.five_hour_reset_seconds))
+    lines.append(format_metric_line("1주", usage.seven_day_used_percent))
+    lines.append(format_codex_weekly_reset_line(usage.fetched_at, usage.seven_day_reset_seconds))
+    return lines
+
+
 def build_detail_lines(snapshot: AppSnapshot, stale: bool) -> list[str]:
-    lines: list[str] = [cursor_section_title(snapshot)]
+    lines: list[str] = []
+    for section in (
+        _cursor_detail_section(snapshot),
+        _codex_detail_section(snapshot),
+        _claude_detail_section(snapshot),
+    ):
+        _append_section(lines, section)
 
-    if snapshot.cursor and not snapshot.cursor.error:
-        c = snapshot.cursor
-        lines.append(format_metric_line("Auto+Composer", c.auto_percent))
-        lines.append(format_metric_line("API", c.api_percent))
-        lines.append(format_cursor_billing_reset_line(c.fetched_at, c.billing_cycle_end))
-    elif snapshot.cursor and snapshot.cursor.error:
-        lines.append(f"   ⚠ {snapshot.cursor.error}")
-    else:
-        lines.append("   데이터 없음")
-
-    lines.extend(["", codex_section_title(snapshot)])
-
-    if snapshot.codex and not snapshot.codex.error:
-        x = snapshot.codex
-        lines.append(format_metric_line("5시간", x.five_hour_used_percent))
-        lines.append(format_codex_five_hour_reset_line(x.fetched_at, x.five_hour_reset_seconds))
-        lines.append(format_metric_line("1주", x.seven_day_used_percent))
-        lines.append(format_codex_weekly_reset_line(x.fetched_at, x.seven_day_reset_seconds))
-    elif snapshot.codex and snapshot.codex.error:
-        lines.append(f"   ⚠ {snapshot.codex.error}")
-    else:
-        lines.append("   데이터 없음")
-
-    lines.extend(["", claude_section_title(snapshot)])
-
-    if snapshot.claude and not snapshot.claude.error:
-        c = snapshot.claude
-        lines.append(format_metric_line("5시간", c.five_hour_used_percent))
-        lines.append(format_codex_five_hour_reset_line(c.fetched_at, c.five_hour_reset_seconds))
-        lines.append(format_metric_line("1주", c.seven_day_used_percent))
-        lines.append(format_codex_weekly_reset_line(c.fetched_at, c.seven_day_reset_seconds))
-    elif snapshot.claude and snapshot.claude.error:
-        lines.append(f"   ⚠ {snapshot.claude.error}")
-    else:
-        lines.append("   데이터 없음")
-
-    lines.extend(["", format_updated_at(snapshot, stale)])
+    _append_section(lines, [format_updated_at(snapshot, stale)])
     return lines
 
 

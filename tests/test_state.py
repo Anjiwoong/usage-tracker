@@ -47,7 +47,19 @@ def test_menubar_title_partial_error():
     cursor = make_cursor()
     cursor.error = "세션 만료"
     store.update(cursor=cursor, codex=make_codex(), claude=make_claude())
-    assert store.menubar_title() == "🟡 ?%  ·  🟡 52%  ·  🟢 24%"
+    assert store.menubar_title() == "🟡 52%  ·  🟢 24%"
+
+
+def test_menubar_title_all_failed():
+    store = StateStore()
+    cursor = make_cursor()
+    cursor.error = "세션 만료"
+    codex = make_codex()
+    codex.error = "Codex 인증 필요"
+    claude = make_claude()
+    claude.error = "Claude Code 로그인 필요"
+    store.update(cursor=cursor, codex=codex, claude=claude)
+    assert store.menubar_title() == "⚠ —"
 
 
 def test_status_level_uses_worst_default_metric():
