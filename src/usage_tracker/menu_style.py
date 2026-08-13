@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import rumps
 from AppKit import (
     NSAttributedString,
@@ -76,7 +78,7 @@ def styled_menu_item(
     subtle: bool = False,
 ) -> rumps.MenuItem:
     item = rumps.MenuItem(title, callback=_noop)
-    if icon_path:
+    if icon_path and os.path.isfile(icon_path):
         item.icon = icon_path
 
     attributes = _menu_text_attributes(prominent=prominent, subtle=subtle)
@@ -131,12 +133,13 @@ def styled_detail_line(line: str) -> rumps.MenuItem:
 
 
 def _summary_item(label: str, icon_path: str | None) -> rumps.MenuItem:
+    safe_icon = icon_path if icon_path and os.path.isfile(icon_path) else None
     if metric_line_is(label):
         item = styled_metric_menu_item(label)
-        if icon_path:
-            item.icon = icon_path
+        if safe_icon:
+            item.icon = safe_icon
         return item
-    return styled_menu_item(label, icon_path)
+    return styled_menu_item(label, safe_icon)
 
 
 def summary_cursor_item(label: str) -> rumps.MenuItem:

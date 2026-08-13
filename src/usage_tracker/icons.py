@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import os
-from functools import lru_cache
 from pathlib import Path
 
 _PACKAGE_DIR = Path(__file__).resolve().parent
 BUNDLED_CLAUDE_ICON = _PACKAGE_DIR / "assets" / "claude.png"
+BUNDLED_CODEX_ICON = _PACKAGE_DIR / "assets" / "codex.png"
 
 CURSOR_ICON_CANDIDATES = (
     "/Applications/Cursor.app/Contents/Resources/Cursor.icns",
@@ -15,6 +15,9 @@ CURSOR_ICON_CANDIDATES = (
 CODEX_ICON_CANDIDATES = (
     "/Applications/Codex.app/Contents/Resources/icon.icns",
     "/Applications/Codex.app/Contents/Resources/app.icns",
+    "/Applications/ChatGPT.app/Contents/Resources/icon-codex-dark-color.png",
+    "/Applications/ChatGPT.app/Contents/Resources/icon-codex-light.png",
+    str(BUNDLED_CODEX_ICON),
 )
 
 CLAUDE_ICON_CANDIDATES = (
@@ -31,16 +34,13 @@ def resolve_icon_path(candidates: tuple[str, ...]) -> str | None:
     return None
 
 
-@lru_cache(maxsize=2)
 def cursor_icon_path() -> str | None:
     return resolve_icon_path(CURSOR_ICON_CANDIDATES)
 
 
-@lru_cache(maxsize=2)
 def codex_icon_path() -> str | None:
     return resolve_icon_path(CODEX_ICON_CANDIDATES)
 
 
-@lru_cache(maxsize=2)
 def claude_icon_path() -> str | None:
     return resolve_icon_path(CLAUDE_ICON_CANDIDATES)
